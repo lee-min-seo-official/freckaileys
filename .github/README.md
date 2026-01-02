@@ -1,64 +1,54 @@
-<h1><img alt="Baileys logo" src="https://raw.githubusercontent.com/WhiskeySockets/Baileys/refs/heads/master/Media/logo.png" height="75"/></h1>
+# Freckaileys
 
+⚡ **Freckaileys** is a **high-performance, modified fork** of  
+[@whiskeysockets/baileys](https://github.com/whiskeysockets/baileys), focused on **speed optimizations, extended message control, and experimental protocol behavior** for advanced WhatsApp bots.
 
-> [!CAUTION]
-> NOTICE OF BREAKING CHANGE.
->
-> As of 7.0.0, multiple breaking changes were introduced into the library.
->
-> Please check out https://whiskey.so/migrate-latest for more information.
+> Built for developers who know what they’re doing.
 
-Baileys is a WebSockets-based TypeScript library for interacting with the WhatsApp Web API.
+---
 
-Join the WhiskeySockets community via the link: https://whiskey.so/discord
+## 🚀 What is Freckaileys?
 
-# Usage & Guide
+Freckaileys is **not a replacement** for Baileys — it is a **power-user fork** designed for:
 
-> [!IMPORTANT]
-> The new guide is a work in progress. Expect missing pages/content. [Report missing or incorrect content.](https://github.com/WhiskeySockets/baileys.wiki-site/issues/new)
->
-> **You can still access the old guide here:** [README.md](https://github.com/WhiskeySockets/Baileys/tree/master/README.md), or the [NPM homepage](https://npmjs.com/package/baileys).
+- Faster message dispatch
+- Reduced internal overhead
+- Extended control over message payloads
+- Experimental features not available in upstream Baileys
+- Easier patching for research & private bots
 
-The new guide is posted at https://baileys.wiki .
+This project assumes you are **comfortable maintaining your own fork** and understand WhatsApp Web limitations.
 
-# Get Support
+---
 
-If you'd like business to enterprise-level support from Rajeh, the current maintainer of Baileys, you can book a video chat. Book a 1 hour time slot by contacting him on Discord or pre-ordering [here](https://purpshell.dev/book). The earlier you pre-order the better, as his time slots usually fill up very quickly. He offers immense value per hour and will answer all your questions before the time runs out.
+## ✨ Key Differences from Baileys
 
-If you are a business, we encourage you to contribute back to the high development costs of the project and to feed the maintainers who dump tens of hours a week on this. You can do so by booking meetings or sponsoring below. All support, even in bona fide / contribution hours, is welcome by businesses of all sizes. This is not condoning or endorsing businesses to use the library. See the Disclaimer below.
+Compared to upstream Baileys, Freckaileys may include:
 
-# Sponsor
+- ⚡ Optimized message sending pipeline  
+- 🔁 Reduced ACK / retry overhead (configurable)
+- 🧵 Better parallel message handling
+- 🧪 Experimental payload & context manipulation
+- 🛠️ Easier internal patch points
+- 🧹 Removed or relaxed non-critical validations
 
-If you'd like to financially support this project, you can do so by supporting the current maintainer [here](https://purpshell.dev/sponsor).
+> Some features may trade safety for performance. Use responsibly.
 
-# Disclaimer
-> [!CAUTION]
-> This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates.
-> The official WhatsApp website can be found at whatsapp.com. "WhatsApp" as well as related names, marks, emblems and images are registered trademarks of their respective owners.
->
-> The maintainers of Baileys do not in any way condone the use of this application in practices that violate the Terms of Service of WhatsApp. The maintainers of this application call upon the personal responsibility of its users to use this application in a fair way, as it is intended to be used.
-> Use at your own discretion. Do not spam people with this. We discourage any stalkerware, bulk or automated messaging usage.
+---
 
-# License
-Copyright (c) 2025 Rajeh Taher/WhiskeySockets
+## ⚠️ Important Disclaimer
 
-Licensed under the MIT License:
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Freckaileys **does NOT bypass WhatsApp server-side limits**.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+- Excessive speed **can result in rate limits or bans**
+- Some modifications are **experimental**
+- WhatsApp Web protocol is **undocumented and subject to change**
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You are **fully responsible** for how you use this library.
 
-Thus, the maintainers of the project can't be held liable for any potential misuse of this project.
+---
+
+## 📦 Installation
+
+```bash
+npm install freckaileys
