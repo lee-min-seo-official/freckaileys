@@ -109,6 +109,30 @@ export const makeSocket = (config: SocketConfig) => {
 
 	ws.connect()
 
+// Add after socket connection setup
+let sendBatch: Buffer[] = []
+let flushTimer: NodeJS.Timeout | null = null
+
+const flushBatch = () => {
+    if (sendBatch.length === 0) return
+    
+    const combined = Buffer.concat(sendBatch)
+    ws.send(combined)
+    sendBatch = []
+    flushTimer = null
+}
+
+const enqueueSend = (data: Buffer) => {
+    sendBatch.push(data)
+    
+    if (sendBatch.length >= MAX_BATCH_SIZE) {
+        if (flushTimer) clearTimeout(flushTimer)
+        flushBatch()
+    } else if (!flushTimer) {
+        flushTimer = setTimeout(flushBatch, BATCH_FLUSH_INTERVAL)
+    }
+}
+
 	const sendPromise = promisify(ws.send)
 	/** send a raw buffer */
 	const sendRawMessage = async (data: Uint8Array | Buffer) => {
@@ -127,15 +151,25 @@ export const makeSocket = (config: SocketConfig) => {
 		})
 	}
 
-	/** send a binary node */
-	const sendNode = (frame: BinaryNode) => {
-		if (logger.level === 'trace') {
-			logger.trace({ xml: binaryNodeToString(frame), msg: 'xml send' })
-		}
 
-		const buff = encodeBinaryNode(frame)
-		return sendRawMessage(buff)
-	}
+	
+	/** send a binary node */
+const sendNode = async(frame: BinaryNode) => {
+      const msgId = frame.attrs.id
+-     const encoded = encodeBinaryNode(frame)
+-     await ws.send(encoded)
++     const encoded = encodeBinaryNode(frame)
++     
++     // Direct send for critical messages
++     if (frame.tag === 'iq' || frame.tag === 'receipt' || frame.attrs.type === 'chat') {
++         ws.send(encoded)
++     } else {
++         enqueueSend(encoded)
++     }
+      
+      const result = await waitForMessage(msgId)
+      return result
+  }
 
 	/**
 	 * Wait for a message with a certain tag to be received
