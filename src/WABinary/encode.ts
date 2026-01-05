@@ -2,14 +2,25 @@ import * as constants from './constants'
 import { type FullJid, jidDecode } from './jid-utils'
 import type { BinaryNode, BinaryNodeCodingOptions } from './types'
 
-export const encodeBinaryNode = (
-	node: BinaryNode,
-	opts: Pick<BinaryNodeCodingOptions, 'TAGS' | 'TOKEN_MAP'> = constants,
-	buffer: number[] = [0]
-): Buffer => {
-	const encoded = encodeBinaryNodeInner(node, opts, buffer)
-	return Buffer.from(encoded)
-}
+  export const encodeBinaryNode = (node: BinaryNode): Buffer => {
+-     const stream = new BinaryOutputStream()
+-     stream.writeNode(node)
+-     return stream.toBuffer()
++     // Direct buffer allocation based on estimated size
++     const estimatedSize = estimateNodeSize(node)
++     const buffer = Buffer.allocUnsafe(estimatedSize + 128)
++     let offset = 0
++     
++     offset = writeNodeToBuffer(node, buffer, offset)
++     return buffer.slice(0, offset)
+  }
+
++ const estimateNodeSize = (node: BinaryNode): number => {
++     let size = 2 + node.tag.length
++     size += Object.keys(node.attrs).length * 20
++     if (Buffer.isBuffer(node.content)) size += node.content.length
++     return size
++ }
 
 const encodeBinaryNodeInner = (
 	{ tag, attrs, content }: BinaryNode,
