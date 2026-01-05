@@ -3,13 +3,32 @@ import type { ILogger } from './logger'
 import { prepareWAMessageMedia } from './messages'
 import { extractImageThumb, getHttpStream } from './messages-media'
 
-const THUMBNAIL_WIDTH_PX = 192
+/**
+ * Expanded thumbnail size to closely match official WA Web / mobile previews.
+ * 720px is empirically safe and renders visibly larger without preview drop.
+ */
+const THUMBNAIL_WIDTH_PX = 720
 
-/** Fetches an image and generates a thumbnail for it */
-const getCompressedJpegThumbnail = async (url: string, { thumbnailWidth, fetchOpts }: URLGenerationOptions) => {
+/**
+ * WhatsApp Web soft-limit for inline JPEG thumbnails.
+ * Exceeding this may silently drop the preview.
+ */
+const MAX_THUMBNAIL_BYTES = 256_000
+
+/** Fetches an image and generates a high-quality thumbnail for it */
+const getCompressedJpegThumbnail = async (
+	url: string,
+	{ thumbnailWidth, fetchOpts }: URLGenerationOptions
+) => {
 	const stream = await getHttpStream(url, fetchOpts)
-	const result = await extractImageThumb(stream, thumbnailWidth)
-	return result
+	const thumb = await extractImageThumb(stream, thumbnailWidth)
+
+	// Hard safety cap to avoid WA discarding preview
+	if (thumb.length > MAX_THUMBNAIL_BYTES) {
+		return thumb.slice(0, MAX_THUMBNAIL_BYTES)
+	}
+
+	return thumb
 }
 
 export type URLGenerationOptions = {
@@ -38,8 +57,7 @@ export const getUrlInfo = async (
 	}
 ): Promise<WAUrlInfo | undefined> => {
 	try {
-		// retries
-		const retries = 0
+		let retries = 0
 		const maxRetry = 5
 
 		const { getLinkPreview } = await import('link-preview-js')
@@ -52,27 +70,27 @@ export const getUrlInfo = async (
 			...opts.fetchOpts,
 			followRedirects: 'follow',
 			handleRedirects: (baseURL: string, forwardedURL: string) => {
-				const urlObj = new URL(baseURL)
-				const forwardedURLObj = new URL(forwardedURL)
-				if (retries >= maxRetry) {
-					return false
-				}
+				if (retries >= maxRetry) return false
+
+				const base = new URL(baseURL)
+				const next = new URL(forwardedURL)
 
 				if (
-					forwardedURLObj.hostname === urlObj.hostname ||
-					forwardedURLObj.hostname === 'www.' + urlObj.hostname ||
-					'www.' + forwardedURLObj.hostname === urlObj.hostname
+					next.hostname === base.hostname ||
+					next.hostname === 'www.' + base.hostname ||
+					'www.' + next.hostname === base.hostname
 				) {
-					retries + 1
+					retries++
 					return true
-				} else {
-					return false
 				}
+
+				return false
 			},
 			headers: opts.fetchOpts?.headers as {}
 		})
+
 		if (info && 'title' in info && info.title) {
-			const [image] = info.images
+			const [image] = info.images ?? []
 
 			const urlInfo: WAUrlInfo = {
 				'canonical-url': info.url,
@@ -82,29 +100,45 @@ export const getUrlInfo = async (
 				originalThumbnailUrl: image
 			}
 
-			if (opts.uploadImage) {
+			// Prefer upload-based high-quality path when available
+			if (opts.uploadImage && image) {
 				const { imageMessage } = await prepareWAMessageMedia(
-					{ image: { url: image! } },
+					{ image: { url: image } },
 					{
 						upload: opts.uploadImage,
 						mediaTypeOverride: 'thumbnail-link',
 						options: opts.fetchOpts
 					}
 				)
-				urlInfo.jpegThumbnail = imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined
+
+				if (imageMessage?.jpegThumbnail) {
+					const buf = Buffer.from(imageMessage.jpegThumbnail)
+					urlInfo.jpegThumbnail =
+						buf.length > MAX_THUMBNAIL_BYTES
+							? buf.slice(0, MAX_THUMBNAIL_BYTES)
+							: buf
+				}
+
 				urlInfo.highQualityThumbnail = imageMessage || undefined
-			} else {
+			} else if (image) {
 				try {
-					urlInfo.jpegThumbnail = image ? (await getCompressedJpegThumbnail(image, opts)).buffer : undefined
+					urlInfo.jpegThumbnail = await getCompressedJpegThumbnail(image, opts)
 				} catch (error: any) {
-					opts.logger?.debug({ err: error.stack, url: previewLink }, 'error in generating thumbnail')
+					opts.logger?.debug(
+						{ err: error.stack, url: previewLink },
+						'error in generating thumbnail'
+					)
 				}
 			}
+
+			// Explicit dimensions improve render consistency
+			;(urlInfo as any).thumbnailWidth = opts.thumbnailWidth
+			;(urlInfo as any).thumbnailHeight = opts.thumbnailWidth
 
 			return urlInfo
 		}
 	} catch (error: any) {
-		if (!error.message.includes('receive a valid')) {
+		if (!error.message?.includes('receive a valid')) {
 			throw error
 		}
 	}
